@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ComponentName = () => {
+const Page = () => {
   return (
     <div>
       Page
@@ -8,4 +8,4 @@ const ComponentName = () => {
   );
 };
 
-export default ComponentName;
+export default Page;
