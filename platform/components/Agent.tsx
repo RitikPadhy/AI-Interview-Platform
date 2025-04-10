@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { vapi } from "@/lib/vapi.sdk";
+import { interviewer } from '@/constants';
 
 // Used for storing the current status of a call
 enum CallStatus {
@@ -21,7 +22,7 @@ interface SavedMessage {
     content: string;
 }
 
-const Agent = ({userName, userId, type }: AgentProps) => {
+const Agent = ({userName, userId, type, interviewId, questions }: AgentProps) => {
     const router = useRouter();
     const [callStatus, setCallStatus] = useState(CallStatus.INACTIVE);
     const [isSpeaking, setIsSpeaking] = useState(false);
@@ -83,7 +84,31 @@ const Agent = ({userName, userId, type }: AgentProps) => {
         };
       }, []);
 
+    const handleGenerateFeedback = async (messages: SavedMessage[]) => {
+        console.log('Generate feedback here.');
+
+        // Todo: Create a server action that generates feedback
+        const { success, id} = {
+            success: true,
+            id: 'feedback-id'
+        }
+
+        if(success && id) {
+            router.push(`/interview/${interviewId}/feedback`);
+        } else {
+            console.log('Error saving feedback');
+            router.push('/');
+        }
+    }
+
     useEffect(() => {
+        if(callStatus  === CallStatus.FINISHED) {
+            if(type === 'generate') {
+                router.push('/')
+            } else {
+                handleGenerateFeedback(messages);
+            }
+        }
         if(callStatus  === CallStatus.FINISHED) router.push('/');
     }, [messages, callStatus, type, userId]);
 
@@ -91,13 +116,28 @@ const Agent = ({userName, userId, type }: AgentProps) => {
     const handleCall = async () => {
         setCallStatus(CallStatus.CONNECTING);
 
-        // Starts the ai vapi workflow session and sends the custom input variables
-        await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
-            variableValues: {
-                username: userName,
-                userid: userId
+        if(type === 'generate') {
+            // Starts the ai vapi workflow session and sends the custom input variables
+            await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
+                variableValues: {
+                    username: userName,
+                    userid: userId
+                }
+            })
+        } else {
+            let formattedQuestions = '';
+            if(questions) {
+                formattedQuestions = questions
+                    .map((question) => `-${questions}`)
+                    .join('\n');
             }
-        })
+
+            await vapi.start(interviewer, {
+                variableValues: {
+                    questions: formattedQuestions
+                }
+            })
+        }
     }
     
     // Handle once a call ends
