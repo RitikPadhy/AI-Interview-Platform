@@ -1,4 +1,4 @@
-import { getInterviewsById } from '@/lib/actions/general.action';
+import { getInterviewById } from '@/lib/actions/general.action';
 import React from 'react';
 import { redirect } from 'next/navigation';
 import { getRandomInterviewCover } from '@/lib/utils';
@@ -9,7 +9,7 @@ import { getCurrentUser } from "@/lib/actions/auth.action";
 
 const Page = async ({ params }: RouteParams) => {
     const { id } = await params;
-    const interview = await getInterviewsById(id);
+    const interview = await getInterviewById(id);
     const user = await getCurrentUser();
 
     if(!interview) redirect('/');
