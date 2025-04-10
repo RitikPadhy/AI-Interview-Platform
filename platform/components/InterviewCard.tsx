@@ -5,10 +5,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from './ui/button';
 import DisplayTechIcons from './DisplayTechIcons';
+import { getFeedbackByInterviewId } from '@/lib/actions/general.action';
 
-const InterviewCard = ({ id, userId, role, type, techstack, createdAt }: InterviewCardProps) => {
+const InterviewCard = async ({ id, userId, role, type, techstack, createdAt }: InterviewCardProps) => {
     // Defines a variable of the feedback type
-    const feedback = null as Feedback | null;
+    const feedback = userId && id ? await getFeedbackByInterviewId({interviewId: id, userId}) : null;
 
     // If type has mix it means the user is asking for an interview of a mix of behavioral and technical.
     const normalizedType = /mix/gi.test(type)?'Mixed':type;
