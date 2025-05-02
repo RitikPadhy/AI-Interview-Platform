@@ -4,7 +4,7 @@ This is an AI-powered mock interview platform that allows users to practice inte
 
 ## 🚀 Project Setup
 1. Create a Vapi Agent & Workflow
-Go to Vapi and create a new Agent.
+  Go to Vapi and create a new Agent.
 
 Set up a Workflow and connect it to your agent — this defines how the AI will behave during interviews.
 
