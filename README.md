@@ -4,11 +4,11 @@ This is an AI-powered mock interview platform that allows users to practice inte
 
 ## 🚀 Project Setup
 1. Create a Vapi Agent & Workflow
-  Go to Vapi and create a new Agent.
 
-Set up a Workflow and connect it to your agent — this defines how the AI will behave during interviews.
+Go to Vapi and create a new Agent. Set up a Workflow and connect it to your agent — this defines how the AI will behave during interviews.
 
 2. Create a Next.js App
+
 bash
 Copy
 Edit
@@ -16,15 +16,12 @@ npx create-next-app@latest .
 Clean up the boilerplate: remove favicon.ico, reset page.tsx, and update layout.tsx to use dark mode.
 
 3. Install Shadcn UI
+
 bash
 Copy
 Edit
 npx shadcn-ui@latest init
 Install components:
-
-bash
-Copy
-Edit
 npx shadcn-ui@latest add button form input sonner
 Shadcn UI provides beautifully-designed, accessible components customizable in React apps.
 
