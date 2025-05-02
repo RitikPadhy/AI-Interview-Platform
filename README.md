@@ -1,8 +1,8 @@
-## 🧠 AI Interview Trainer Platform
+# 🧠 AI Interview Trainer Platform
 
 This is an AI-powered mock interview platform that allows users to practice interviews with an intelligent voice assistant. The system leverages Next.js, Shadcn UI, Firebase, and Vapi (voice agent API) to deliver dynamic, real-time interview experiences with AI feedback.
 
-# 🚀 Project Setup
+## 🚀 Project Setup
 1. Create a Vapi Agent & Workflow
 Go to Vapi and create a new Agent.
 
