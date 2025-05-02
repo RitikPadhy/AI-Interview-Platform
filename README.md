@@ -27,12 +27,7 @@ Shadcn UI provides beautifully-designed, accessible components customizable in R
 
 4. Set Up the Public Folder
 
-Copy contents from the GitHub repo into your public/ directory. Use index.ts inside constants/ as mock data for the model (you can comment out trainer data if causing errors). Move favicon to the /app folder and run the app:
-
-bash
-Copy
-Edit
-npm run dev
+Copy contents from the GitHub repo into your public/ directory. Use index.ts inside constants/ as mock data for the model (you can comment out trainer data if causing errors). Move favicon to the /app folder and run the app: npm run dev
   
 ## 🧩 Routing & Layout
 Route Groups
