@@ -3,42 +3,42 @@
 This is an AI-powered mock interview platform that allows users to practice interviews with an intelligent voice assistant. The system leverages Next.js, Shadcn UI, Firebase, and Vapi (voice agent API) to deliver dynamic, real-time interview experiences with AI feedback.
 
 ## 🚀 Project Setup
-  1. Create a Vapi Agent & Workflow
-  Go to Vapi and create a new Agent.
-  
-  Set up a Workflow and connect it to your agent — this defines how the AI will behave during interviews.
-  
-  2. Create a Next.js App
-  bash
-  Copy
-  Edit
-  npx create-next-app@latest .
-  Clean up the boilerplate: remove favicon.ico, reset page.tsx, and update layout.tsx to use dark mode.
-  
-  3. Install Shadcn UI
-  bash
-  Copy
-  Edit
-  npx shadcn-ui@latest init
-  Install components:
+1. Create a Vapi Agent & Workflow
+Go to Vapi and create a new Agent.
 
-  bash
-  Copy
-  Edit
-  npx shadcn-ui@latest add button form input sonner
-  Shadcn UI provides beautifully-designed, accessible components customizable in React apps.
+Set up a Workflow and connect it to your agent — this defines how the AI will behave during interviews.
 
-  4. Set Up the Public Folder
-  Copy contents from the GitHub repo into your public/ directory.
-  
-  Use index.ts inside constants/ as mock data for the model (you can comment out trainer data if causing errors).
-  
-  Move favicon to the /app folder and run the app:
-  
-  bash
-  Copy
-  Edit
-  npm run dev
+2. Create a Next.js App
+bash
+Copy
+Edit
+npx create-next-app@latest .
+Clean up the boilerplate: remove favicon.ico, reset page.tsx, and update layout.tsx to use dark mode.
+
+3. Install Shadcn UI
+bash
+Copy
+Edit
+npx shadcn-ui@latest init
+Install components:
+
+bash
+Copy
+Edit
+npx shadcn-ui@latest add button form input sonner
+Shadcn UI provides beautifully-designed, accessible components customizable in React apps.
+
+4. Set Up the Public Folder
+Copy contents from the GitHub repo into your public/ directory.
+
+Use index.ts inside constants/ as mock data for the model (you can comment out trainer data if causing errors).
+
+Move favicon to the /app folder and run the app:
+
+bash
+Copy
+Edit
+npm run dev
   
 ## 🧩 Routing & Layout
 Route Groups
