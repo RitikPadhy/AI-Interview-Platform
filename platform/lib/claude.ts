@@ -98,6 +98,17 @@ export async function* runClaude(opts: RunOptions): AsyncGenerator<ClaudeEvent> 
     resolveNext = null;
   };
 
+  // The process can exit before stdout has been fully drained, so the turn is
+  // only over once both have landed — otherwise the last tokens are dropped.
+  let stdoutEnded = false;
+  let exited = false;
+  const settle = () => {
+    if (!stdoutEnded || !exited) return;
+    finished = true;
+    resolveNext?.();
+    resolveNext = null;
+  };
+
   let buffer = "";
   const consume = (line: string) => {
     const trimmed = line.trim();
@@ -122,6 +133,8 @@ export async function* runClaude(opts: RunOptions): AsyncGenerator<ClaudeEvent> 
     // The final message may arrive without a trailing newline.
     consume(buffer);
     buffer = "";
+    stdoutEnded = true;
+    settle();
   });
 
   child.on("error", (err) => {
@@ -129,8 +142,9 @@ export async function* runClaude(opts: RunOptions): AsyncGenerator<ClaudeEvent> 
       type: "error",
       message: `Could not start the \`claude\` CLI (${err.message}). Install it with \`npm i -g @anthropic-ai/claude-code\` or set CLAUDE_BIN.`,
     });
-    finished = true;
-    resolveNext?.();
+    stdoutEnded = true;
+    exited = true;
+    settle();
   });
 
   child.on("close", (code, signal) => {
@@ -141,9 +155,10 @@ export async function* runClaude(opts: RunOptions): AsyncGenerator<ClaudeEvent> 
         message: stderr.trim() || `claude exited with code ${code}`,
       });
     }
-    finished = true;
-    resolveNext?.();
-    resolveNext = null;
+    exited = true;
+    // A kill leaves stdout half-open; do not wait on a stream that will never end.
+    if (signal) stdoutEnded = true;
+    settle();
   });
 
   try {

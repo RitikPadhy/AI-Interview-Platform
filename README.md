@@ -26,6 +26,8 @@ Pick a track → pick the round → paste the job description → choose the for
   write-up — verdict, question-by-question, and the three things to drill next.
 - **Online assessment** generates a timed paper instead. Write your answers, submit once, get marked
   with the answer a strong candidate would have given.
+- A clock runs from the first question, and **Copy transcript** puts the whole round — questions,
+  your answers, the feedback — on the clipboard as markdown so you can keep it.
 
 The conversation is a real multi-turn Claude session (`--session-id` on the first turn, `--resume`
 after), so it remembers everything you said.
@@ -40,6 +42,10 @@ It never edits your resume file and never suggests a claim you cannot back up.
 ### 3. Cover Letter
 150 words. Hook / proof / close. Real metrics pulled from your resume, plain language, and a hard
 ban on `passionate`, `synergy`, `spearheaded`, `leveraged`, and the rest of the tells.
+
+It never invents experience, and it never argues against you either — no "I haven't used X yet".
+Below the letter is a note for your eyes only: word count, the resume facts used, and every JD
+requirement the letter stayed quiet about with the closest real thing to say if a screener asks.
 
 ### 4. Who to Message
 The only feature that touches the internet. It runs live `WebSearch` / `WebFetch` through the CLI to

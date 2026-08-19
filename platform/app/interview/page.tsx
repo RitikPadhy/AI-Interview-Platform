@@ -1,7 +1,18 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { ArrowLeft, ClipboardCheck, Loader2, MessagesSquare, RotateCcw, Send, Square } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  Check,
+  ClipboardCheck,
+  Copy,
+  Loader2,
+  MessagesSquare,
+  RotateCcw,
+  Send,
+  Square,
+  Timer,
+} from "lucide-react";
 import { toast } from "sonner";
 import Markdown from "@/components/Markdown";
 import ResumeStatus from "@/components/ResumeStatus";
@@ -22,8 +33,21 @@ export default function InterviewPage() {
   const [draft, setDraft] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [finished, setFinished] = useState(false);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const [copied, setCopied] = useState(false);
   const { send, stop, running } = useClaudeStream();
   const logRef = useRef<HTMLDivElement>(null);
+
+  // Real rounds are timed, so this one is too — it starts when the first
+  // question (or the assessment paper) is on screen and stops at feedback.
+  useEffect(() => {
+    if (startedAt === null || finished) return;
+    const id = setInterval(() => setElapsed(Math.round((Date.now() - startedAt) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [startedAt, finished]);
+
+  const clock = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
 
   const trackLabel = TRACKS.find((t) => t.id === track)?.label ?? "";
   const roundLabel = track ? ROUNDS[track].find((r) => r.id === round)?.label ?? "" : "";
@@ -58,8 +82,16 @@ export default function InterviewPage() {
       {
         onSession: setSessionId,
         onDelta: streamInto,
-        onDone: autoScroll,
-        onError: (m) => toast.error(m),
+        onDone: () => {
+          autoScroll();
+          setStartedAt((t) => t ?? Date.now());
+        },
+        onError: (m) => {
+          toast.error(m);
+          // Never strand the user in an empty room — send them back to the wizard.
+          setTurns([]);
+          setSessionId(null);
+        },
       },
     );
   };
@@ -92,7 +124,22 @@ export default function InterviewPage() {
     setSessionId(null);
     setFinished(false);
     setDraft("");
+    setStartedAt(null);
+    setElapsed(0);
     setStep(0);
+  };
+
+  /** The whole round as markdown, so a good feedback write-up can be kept. */
+  const copyTranscript = async () => {
+    const header = `# ${format === "assessment" ? "Online Assessment" : roundLabel} — ${trackLabel}\n\nTime taken: ${clock}\n`;
+    const body = turns
+      .filter((t) => t.text.trim())
+      .map((t) => `\n---\n\n**${t.role === "me" ? "You" : "Interviewer"}**\n\n${t.text.trim()}`)
+      .join("\n");
+    await navigator.clipboard.writeText(header + body);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+    toast.success("Transcript copied");
   };
 
   /* ---------------- setup wizard ---------------- */
@@ -239,11 +286,19 @@ export default function InterviewPage() {
           <p>{trackLabel}</p>
         </div>
         <div className="row">
+          {startedAt !== null && (
+            <span className="status-pill" title="Time on this round">
+              <Timer size={13} /> {clock}
+            </span>
+          )}
           {format === "interview" && !finished && (
             <button className="btn-ghost" onClick={() => reply("end")} disabled={running || !sessionId}>
               <ClipboardCheck size={14} /> End & get feedback
             </button>
           )}
+          <button className="btn-ghost" onClick={copyTranscript} disabled={running}>
+            {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? "Copied" : "Copy transcript"}
+          </button>
           <button className="btn-ghost" onClick={restart}>
             <RotateCcw size={14} /> New round
           </button>

@@ -190,7 +190,12 @@ Style rules you must not break:
 - Simple, direct, human language. Short sentences.
 - Banned words: passionate, synergy, spearheaded, leveraged, utilized, thrilled, excited to apply, dynamic, proven track record, results-driven, cutting-edge, robust, ecosystem, journey.
 - Never open with "I am writing to apply for..." or any variant.
-- Only use facts that appear in the resume. Never invent a metric, employer, or project.`;
+- Only use facts that appear in the resume. Never invent a metric, employer, or project.
+- Never volunteer a weakness. Do not name a tool the candidate has not used, do not write "the gap is",
+  "I haven't", "I lack", "while I have not", or any sentence that concedes a missing requirement.
+  Honesty means not inventing experience — it does not mean arguing against yourself in a document
+  whose only job is to get a reply. Where a requirement is not covered, write about the closest thing
+  they have genuinely done and let it stand on its own.`;
 
 export function coverPrompt(args: {
   jobTitle: string;
@@ -212,7 +217,12 @@ Formatting rules:
 
 Keep the entire letter under 175 words. Target 150.
 
-Output the letter body only — no subject line, no address block, no notes. After the letter, add a "---" and then a two-line note: the word count, and which resume facts you used.`;
+Output the letter body only — no subject line, no address block, no notes.
+
+After the letter, add a "---" and then a short note for my eyes only (I delete it before sending):
+- Word count.
+- Which resume facts you used.
+- Any JD requirement the letter deliberately stays quiet about, and the closest real experience I could point to if they ask about it in a screen.`;
 }
 
 /* ------------------------------------------------------------------ */
