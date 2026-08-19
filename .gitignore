@@ -1,0 +1,5 @@
+# Personal documents — your resume stays on your machine
+/data/
+*.pdf
+
+.DS_Store

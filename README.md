@@ -1,143 +1,112 @@
-# 🧠 AI Interview Trainer Platform
+# Interview Copilot
 
-This is an AI-powered mock interview platform that allows users to practice interviews with an intelligent voice assistant. The system leverages Next.js, Shadcn UI, Firebase, and Vapi (voice agent API) to deliver dynamic, real-time interview experiences with AI feedback.
+A local web app for landing the job: run mock interviews, tighten your resume against a job
+description, write the cover letter, and find the people worth messaging.
 
-## 🚀 Project Setup
-1. Create a Vapi Agent & Workflow
+Everything runs through the **`claude` CLI already installed on your machine**. There is no API key,
+no Firebase, no cloud account, and no bill — the app shells out to `claude -p` and streams the
+answer back into the browser.
 
-Go to Vapi and create a new Agent. Set up a Workflow and connect it to your agent — this defines how the AI will behave during interviews.
+```bash
+./run.sh          # http://localhost:3000
+```
 
-2. Create a Next.js App
+---
 
-bash
-Copy
-Edit
-npx create-next-app@latest .
-Clean up the boilerplate: remove favicon.ico, reset page.tsx, and update layout.tsx to use dark mode.
+## What it does
 
-3. Install Shadcn UI
+### 1. Mock Interview
+Pick a track → pick the round → paste the job description → choose the format.
 
-bash
-Copy
-Edit
-npx shadcn-ui@latest init
-Install components:
-npx shadcn-ui@latest add button form input sonner
-Shadcn UI provides beautifully-designed, accessible components customizable in React apps.
+- **Tracks:** Data Science / AI & ML, Quantitative Finance, Software Engineering.
+- **Rounds** are specific to the track — ML system design and case studies for DS, brainteasers and
+  market intuition for quant, DSA and system design for SWE, plus the screens and behaviorals.
+- **Mock interview** runs as a real conversation: one question at a time, follow-ups when your
+  answer is thin, no coaching mid-answer. Hit **End & get feedback** for the honest internal
+  write-up — verdict, question-by-question, and the three things to drill next.
+- **Online assessment** generates a timed paper instead. Write your answers, submit once, get marked
+  with the answer a strong candidate would have given.
 
-4. Set Up the Public Folder
+The conversation is a real multi-turn Claude session (`--session-id` on the first turn, `--resume`
+after), so it remembers everything you said.
 
-Copy contents from the GitHub repo into your public/ directory. Use index.ts inside constants/ as mock data for the model (you can comment out trainer data if causing errors). Move favicon to the /app folder and run the app: npm run dev
-  
-## 🧩 Routing & Layout
-Route Groups
-Use route groups (e.g. (auth), (global)) to structure your app without affecting URLs.
+### 2. Resume Suggestions
+Paste a JD. You get the 20-second-screen read, a keyword table with *where in your resume each one
+honestly fits*, line-level rewrites, restructuring advice, and the gaps you cannot keyword your way
+out of.
 
-Example: (auth)/sign-in/page.tsx, (auth)/sign-up/page.tsx
+It never edits your resume file and never suggests a claim you cannot back up.
 
-Update layout.tsx to render {children} and apply consistent layout and styling across nested pages.
+### 3. Cover Letter
+150 words. Hook / proof / close. Real metrics pulled from your resume, plain language, and a hard
+ban on `passionate`, `synergy`, `spearheaded`, `leveraged`, and the rest of the tells.
 
-## 🔐 Auth Pages
-Add AuthForm.tsx and make it a client component ("use client").
+### 4. Who to Message
+The only feature that touches the internet. It runs live `WebSearch` / `WebFetch` through the CLI to
+find the hiring manager, the recruiter and the engineers on the team, then hands you clickable
+LinkedIn search URLs, a connection request under 300 characters, the follow-up message, and a cold
+email. Unverified people are labelled as search patterns rather than invented.
 
-sign-in and sign-up pages both reuse AuthForm, passing type to switch modes dynamically.
+---
 
-Create Zod schema for form validation.
+## Your resume
 
-On sign-up:
+The app looks for a resume in this order:
 
-Use Firebase Client SDK to create user (createUserWithEmailAndPassword)
+1. `data/resume.txt` — text you pasted in the UI
+2. `data/resume.pdf` — a PDF you uploaded in the UI
+3. any `*resume*.pdf` at the repo root ← this is the default
 
-Store the user in Firestore with signUp()
+The PDF is parsed with `unpdf` and the extracted text is injected into every prompt. The **Resume
+loaded from…** bar at the bottom of each page shows what is in play and lets you fix bad extraction
+or swap the file without leaving the page.
 
-On sign-in:
+`data/` and all PDFs are gitignored — your resume stays on your machine.
 
-Validate user with signInWithEmailAndPassword
+---
 
-Pass token to backend to validate, create secure session cookie, and set it.
+## Setup
 
-## 🔥 Firebase Integration
-Use both Admin SDK and Client SDK.
+You need the Claude CLI signed in:
 
-admin.ts handles secure, privileged actions (e.g., setSessionCookie, getCurrentUser).
+```bash
+npm i -g @anthropic-ai/claude-code
+claude            # sign in once, then quit
+```
 
-client.ts handles user auth actions on the client.
+Then:
 
-Use getCurrentUser to check if a session is active (auth guard).
+```bash
+./run.sh
+```
 
-## 🤖 AI Interview Flow with Vapi + Gemini
-Workflow:
-User selects interview type (frontend, backend, behavioral, etc.)
+First run installs dependencies. After that it just starts the dev server on
+[localhost:3000](http://localhost:3000).
 
-Vapi assistant asks questions and collects answers in real-time.
+To point at a CLI somewhere unusual, set `CLAUDE_BIN=/path/to/claude`.
 
-After the call ends, the transcript is sent to the backend.
+---
 
-Gemini AI generates interview feedback and stores it in Firestore.
+## How it works
 
-## Key Functions:
-handleCall(): starts a Vapi session with input variables.
+```
+browser ──POST /api/chat──▶ spawn `claude -p --output-format stream-json`
+        ◀────── SSE ──────  text deltas parsed out of the CLI's JSON stream
+```
 
-handleDisconnect(): ends the call and triggers feedback generation.
+| Path | Role |
+| --- | --- |
+| `lib/claude.ts` | Spawns the CLI, parses `stream-json`, exposes an event generator + SSE wrapper |
+| `lib/prompts.ts` | Every system prompt and turn template, plus the track/round taxonomy |
+| `lib/resume.ts` | Finds the resume, extracts PDF text, caches it, handles uploads |
+| `lib/useClaudeStream.ts` | Client hook: POSTs and consumes the SSE stream |
+| `app/api/chat/route.ts` | Routes each mode to its prompt, tools and session handling |
+| `app/api/resume/route.ts` | Read / upload / paste the resume |
 
-createFeedback(): sends transcript to Gemini and stores structured feedback.
+Sessions run with `--safe-mode`, so your CLAUDE.md, skills, hooks and MCP servers stay out of it.
+Text-only features run with `--tools ""`; only **Who to Message** gets `WebSearch` and `WebFetch`.
 
-## 🧠 Interview Features
-getInterviewByUserId: Fetch interviews from Firestore per user.
+## Stack
 
-getFormattedQuestions: Map tech stacks to logo/image URLs via getTechLogos().
-
-DisplayTechIcons.tsx: Displays tech logos per interview.
-
-## 📄 Pages & Components
-root/page.tsx: Home page renders sections + interview cards.
-
-InterviewCard.tsx: Shows available interviews.
-
-interviewer/index.ts: Defines the assistant model, voice, and behavior prompt.
-
-## 🛠️ Miscellaneous
-Uses Zod for form validation.
-
-Uses route groups to modularize (auth) and (global) layouts.
-
-Uses useEffect to hook into Vapi event lifecycles (start/stop/message).
-
-Indexed Firestore documents and added support for viewing past/upcoming interviews.
-
-## 🧪 API Endpoints
-GET /api/interview → Returns success: true
-
-POST /api/interview → Accepts transcript + prompt, returns questions from Gemini
-
-Auth and feedback endpoints also included (e.g., createFeedback)
-
-## ✅ ENV Variables
-env
-Copy
-Edit
-NEXT_PUBLIC_FIREBASE_API_KEY=...
-FIREBASE_PROJECT_ID=...
-VAPI_API_KEY=...
-GEMINI_API_KEY=...
-🧱 Tech Stack
-Next.js 14 (App Router)
-
-Shadcn/UI + Tailwind CSS
-
-Firebase (Auth, Firestore, Admin SDK)
-
-Google Gemini (LLM)
-
-Vapi (Voice agent SDK)
-
-📦 Future Improvements
-Add realtime status tracking for interview progress
-
-Store transcripts as Markdown for readability
-
-Add multi-language support
-
-Generate follow-up questions via Gemini
-
-Let me know if you'd like a PDF version or want it broken into CONTRIBUTING.md, INSTALL.md, etc. ✅
+Next.js 15 (App Router) · React 19 · Tailwind v4 · `unpdf` · the Claude CLI. That is the whole
+dependency list.
