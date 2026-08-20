@@ -5,6 +5,7 @@ import { Loader2, Mail, Sparkles, Square } from "lucide-react";
 import { toast } from "sonner";
 import OutputPanel from "@/components/OutputPanel";
 import ResumeStatus from "@/components/ResumeStatus";
+import TargetPicker, { useTarget } from "@/components/TargetPicker";
 import { useClaudeStream } from "@/lib/useClaudeStream";
 
 export default function CoverLetterPage() {
@@ -13,6 +14,7 @@ export default function CoverLetterPage() {
   const [highlights, setHighlights] = useState("");
   const [jd, setJd] = useState("");
   const [out, setOut] = useState("");
+  const [target, setTarget] = useTarget();
   const { send, stop, running, tool } = useClaudeStream();
 
   const ready = jd.trim().length >= 40 && jobTitle.trim() && company.trim();
@@ -20,7 +22,7 @@ export default function CoverLetterPage() {
   const run = async () => {
     setOut("");
     await send(
-      { mode: "cover", jobTitle, company, highlights, jobDescription: jd },
+      { mode: "cover", jobTitle, company, highlights, jobDescription: jd, target },
       { onDelta: (d) => setOut((prev) => prev + d), onError: (m) => toast.error(m) },
     );
   };
@@ -34,6 +36,8 @@ export default function CoverLetterPage() {
           </h1>
           <p>Under 175 words. Hook, proof, close. No buzzwords.</p>
         </header>
+
+        <TargetPicker target={target} onChange={setTarget} />
 
         <div className="field-row">
           <label className="field">

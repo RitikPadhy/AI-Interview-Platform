@@ -13,6 +13,20 @@ answer back into the browser.
 
 ---
 
+## Internship or full-time
+
+Every page has an **Applying for** switch — *Internship* (with the term, e.g. `Summer 2027`) or
+*Full-time*. It is not cosmetic: intern pipelines screen on completely different criteria, and the
+choice is injected into every prompt.
+
+Set to **Internship**, being mid-degree is treated as the qualification rather than an availability
+problem, prior industry experience is judged against an intern pool instead of a senior bar,
+coursework and projects count, a missing production tool is a project to build rather than a
+blocker, and outreach puts university / early-career recruiters near the top. Set to **Full-time**,
+you get the experienced-hire bar back.
+
+The choice is remembered in the browser, so you pick it once per hunt.
+
 ## What it does
 
 ### 1. Mock Interview

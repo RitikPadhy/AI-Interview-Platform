@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import Markdown from "@/components/Markdown";
 import ResumeStatus from "@/components/ResumeStatus";
+import TargetPicker, { useTarget } from "@/components/TargetPicker";
 import { ROUNDS, TRACKS, type TrackId } from "@/lib/prompts";
 import { useClaudeStream } from "@/lib/useClaudeStream";
 
@@ -28,6 +29,7 @@ export default function InterviewPage() {
   const [round, setRound] = useState<string | null>(null);
   const [jd, setJd] = useState("");
   const [format, setFormat] = useState<Format>("interview");
+  const [target, setTarget] = useTarget();
 
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
@@ -77,7 +79,7 @@ export default function InterviewPage() {
       {
         mode: "interview",
         action: "start",
-        setup: { track: trackLabel, round: roundLabel, jobDescription: jd, format },
+        setup: { track: trackLabel, round: roundLabel, jobDescription: jd, format, target },
       },
       {
         onSession: setSessionId,
@@ -218,9 +220,10 @@ export default function InterviewPage() {
               <textarea
                 value={jd}
                 onChange={(e) => setJd(e.target.value)}
-                rows={14}
+                rows={12}
                 placeholder="Paste the full job posting here…"
               />
+              <TargetPicker target={target} onChange={setTarget} />
               <div className="row end">
                 <button className="btn-primary" disabled={jd.trim().length < 40} onClick={() => setStep(3)}>
                   Continue
@@ -253,6 +256,11 @@ export default function InterviewPage() {
               <div className="summary">
                 <span>{trackLabel}</span>
                 <span>{roundLabel}</span>
+                <span>
+                  {target.kind === "internship"
+                    ? `${target.term?.trim() || "Summer"} internship`
+                    : "Full-time"}
+                </span>
                 <span>{jd.trim().split(/\s+/).length} words of JD</span>
               </div>
               <div className="row end">

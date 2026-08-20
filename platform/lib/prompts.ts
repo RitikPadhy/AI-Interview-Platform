@@ -60,6 +60,64 @@ function jdBlock(jd: string): string {
 }
 
 /* ------------------------------------------------------------------ */
+/* What kind of application this is                                    */
+/* ------------------------------------------------------------------ */
+
+export const TARGETS = [
+  { id: "internship", label: "Internship", hint: "Summer 2027" },
+  { id: "fulltime", label: "Full-time", hint: "New grad or experienced" },
+] as const;
+
+export type TargetId = (typeof TARGETS)[number]["id"];
+
+export interface Target {
+  kind: TargetId;
+  /** Free text so it never goes stale, e.g. "Summer 2027". */
+  term?: string;
+}
+
+export const DEFAULT_TARGET: Target = { kind: "internship", term: "Summer 2027" };
+
+/**
+ * Intern pipelines screen on completely different criteria from full-time reqs,
+ * so every feature has to know which one it is looking at. Getting this wrong
+ * is worse than useless: full-time framing tells a current student their degree
+ * is an availability problem, when for an internship it is the qualification.
+ */
+function targetBlock(target?: Target): string {
+  const t = target ?? DEFAULT_TARGET;
+
+  if (t.kind === "internship") {
+    const term = t.term?.trim() || "an upcoming summer";
+    return `\n\n<application_target>
+This is an application for a ${term} INTERNSHIP, not a full-time role. Screen it the way an
+internship pipeline actually screens, which is not how a full-time req is screened:
+
+- The candidate is a current graduate student. Being mid-degree is the qualification here, not a
+  conflict. Never treat the graduation date as an availability problem, never suggest explaining it
+  away, and never suggest they are applying to the wrong posting because they are still enrolled.
+- Availability is a single factual line (the internship window), not something to defend.
+- Prior full-time industry experience is a major differentiator against an intern pool where most
+  applicants have none. Foreground it. Do not evaluate it against a senior bar.
+- Education, coursework, and projects carry real weight on an intern resume. Do not tell the
+  candidate to bury them the way you would for an experienced-hire resume.
+- "2+ years experience" and similar lines in an internship posting are aspirational. A missing
+  production tool is normal for an intern and is not a blocker — a solid project is enough to clear
+  it. Say what to build, not that they are unqualified.
+- Judge readiness for a scoped 12-week project with a mentor, not for owning a system alone.
+- Internship hiring runs on university recruiting timelines and return-offer conversion. Where it
+  matters, say so.
+</application_target>`;
+  }
+
+  return `\n\n<application_target>
+This is an application for a FULL-TIME role. Screen it against the experienced-hire bar: prior
+production ownership, scope, and immediate availability all count, and gaps in required experience
+are real blockers rather than things a side project papers over.
+</application_target>`;
+}
+
+/* ------------------------------------------------------------------ */
 /* 1. Mock interview                                                   */
 /* ------------------------------------------------------------------ */
 
@@ -69,6 +127,18 @@ export interface InterviewSetup {
   jobDescription: string;
   resume: string;
   format: "interview" | "assessment";
+  target?: Target;
+}
+
+function interviewBar(target?: Target): string {
+  return (target ?? DEFAULT_TARGET).kind === "internship"
+    ? `
+Calibrate to an INTERNSHIP loop, not a senior loop: fundamentals, clean thinking out loud, and depth
+on what the candidate has actually done. Coursework and projects are fair game. Do not expect
+production ownership at scale, and do not grade against a senior bar — grade on whether you would
+want to mentor this person for twelve weeks.`
+    : `
+Calibrate to a FULL-TIME loop: production ownership, scope, and tradeoffs under real constraints.`;
 }
 
 export function interviewSystem(setup: InterviewSetup): string {
@@ -78,7 +148,8 @@ export function interviewSystem(setup: InterviewSetup): string {
 Rules:
 - Calibrate difficulty to the job description, not to a generic template.
 - Never reveal answers until the candidate has submitted their attempt.
-- When you grade, be honest. A wrong answer is wrong. Give the score you would actually give.`;
+- When you grade, be honest. A wrong answer is wrong. Give the score you would actually give.
+${interviewBar(setup.target)}`;
   }
 
   return `You are conducting a live ${setup.round} interview for the role in the job description. You are an experienced ${setup.track} interviewer at the hiring company.${CANDIDATE_VOICE}
@@ -91,11 +162,12 @@ How to run this interview:
 - Reference the candidate's actual resume when it is relevant. Do not invent experience they do not have.
 - Keep your turns short — an interviewer talks far less than the candidate.
 - If the candidate stalls, offer the same small hint a real interviewer would, then continue.
-- Only produce a written evaluation when the candidate explicitly asks to end the interview.`;
+- Only produce a written evaluation when the candidate explicitly asks to end the interview.
+${interviewBar(setup.target)}`;
 }
 
 export function interviewOpening(setup: InterviewSetup): string {
-  const context = `Track: ${setup.track}\nRound: ${setup.round}${jdBlock(setup.jobDescription)}${resumeBlock(setup.resume)}`;
+  const context = `Track: ${setup.track}\nRound: ${setup.round}${targetBlock(setup.target)}${jdBlock(setup.jobDescription)}${resumeBlock(setup.resume)}`;
 
   if (setup.format === "assessment") {
     return `${context}
@@ -151,13 +223,13 @@ Hard rules:
 - Never suggest a keyword the candidate cannot honestly back up from their real experience. If a required keyword is genuinely missing from their background, say so plainly and put it in the "gaps" section instead of the "add this" section.
 - Any wording you propose must sound like a working engineer wrote it. Ban: passionate, spearheaded, synergy, leveraged, utilized, seasoned, dynamic, results-driven, proven track record, cutting-edge, robust, seamless. Plain verbs and real numbers only.`;
 
-export function resumePrompt(jd: string, resume: string): string {
-  return `${jdBlock(jd)}${resumeBlock(resume)}
+export function resumePrompt(jd: string, resume: string, target?: Target): string {
+  return `${targetBlock(target)}${jdBlock(jd)}${resumeBlock(resume)}
 
 Analyse the gap between the resume and the job description. Respond with exactly these sections:
 
 ## Match read
-One paragraph: how this resume lands on a 20-second screen for this job, and the realistic odds of clearing it.
+One paragraph: how this resume lands on a 20-second screen for this job, and the realistic odds of clearing it. Judge it against the pool that actually applies to this kind of posting, not against an idealised candidate.
 
 ## Must-add keywords
 A markdown table with columns: Keyword | Why it matters for this JD | Where in my resume it honestly fits.
@@ -203,12 +275,13 @@ export function coverPrompt(args: {
   jd: string;
   resume: string;
   highlights: string;
+  target?: Target;
 }): string {
   const highlights = args.highlights.trim()
     ? `\n\n<must_include_highlights>\n${args.highlights.trim()}\n</must_include_highlights>`
     : "";
 
-  return `Write a short, punchy cover letter for my application to the **${args.jobTitle}** role at **${args.company}**.${jdBlock(args.jd)}${resumeBlock(args.resume)}${highlights}
+  return `Write a short, punchy cover letter for my application to the **${args.jobTitle}** role at **${args.company}**.${targetBlock(args.target)}${jdBlock(args.jd)}${resumeBlock(args.resume)}${highlights}
 
 Formatting rules:
 - **Paragraph 1 (The Hook):** start immediately with how my experience directly aligns with their core technical stack. Do NOT write an intro sentence like "I am writing to apply for...".
@@ -238,15 +311,21 @@ Hard rules:
 - Label everything you found by search as verified, and everything you inferred as a search pattern.
 - Prefer LinkedIn search URLs the candidate can click over guessed profile links.`;
 
-export function outreachPrompt(args: { jd: string; resume: string; company: string }): string {
+export function outreachPrompt(args: {
+  jd: string;
+  resume: string;
+  company: string;
+  target?: Target;
+}): string {
   const company = args.company.trim() ? `\n\nCompany: ${args.company.trim()}` : "";
-  return `Find the right people to reach out to about this role, and write what to say to them.${company}${jdBlock(args.jd)}${resumeBlock(args.resume)}
+  return `Find the right people to reach out to about this role, and write what to say to them.${company}${targetBlock(args.target)}${jdBlock(args.jd)}${resumeBlock(args.resume)}
 
 Search the web first. Then respond with exactly these sections:
 
 ## Who to message, in priority order
 A markdown table: Person or role | Title & team | Why them | Verified? | Where to find them.
 Put named, verified people first. Where you could not verify a name, give the exact title to search for.
+For an internship, university / early-career recruiters and the program's own recruiting team belong near the top alongside the engineers — they own intern headcount, and they run to a calendar. Say when the pipeline typically opens and closes if you can find it.
 
 ## Ready-to-send LinkedIn search links
 Clickable \`https://www.linkedin.com/search/...\` URLs, one per target type (hiring manager, recruiter, team engineer, alum).

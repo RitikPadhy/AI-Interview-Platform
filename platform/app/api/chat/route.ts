@@ -13,6 +13,7 @@ import {
   outreachPrompt,
   resumePrompt,
   type InterviewSetup,
+  type Target,
 } from "@/lib/prompts";
 
 export const runtime = "nodejs";
@@ -23,6 +24,7 @@ type Body = {
   action?: "start" | "reply" | "end" | "grade";
   sessionId?: string;
   setup?: Omit<InterviewSetup, "resume">;
+  target?: Target;
   message?: string;
   jobDescription?: string;
   jobTitle?: string;
@@ -73,7 +75,7 @@ export async function POST(req: NextRequest) {
         return Response.json({ error: "Paste a job description first." }, { status: 400 });
       }
       systemPrompt = RESUME_SYSTEM;
-      prompt = resumePrompt(body.jobDescription, resume);
+      prompt = resumePrompt(body.jobDescription, resume, body.target);
       break;
     }
 
@@ -88,6 +90,7 @@ export async function POST(req: NextRequest) {
         jd: body.jobDescription,
         resume,
         highlights: body.highlights ?? "",
+        target: body.target,
       });
       break;
     }
@@ -102,6 +105,7 @@ export async function POST(req: NextRequest) {
         jd: body.jobDescription,
         resume,
         company: body.company ?? "",
+        target: body.target,
       });
       break;
     }

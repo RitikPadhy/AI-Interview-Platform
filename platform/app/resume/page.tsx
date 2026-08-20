@@ -5,17 +5,19 @@ import { FileText, Loader2, Sparkles, Square } from "lucide-react";
 import { toast } from "sonner";
 import OutputPanel from "@/components/OutputPanel";
 import ResumeStatus from "@/components/ResumeStatus";
+import TargetPicker, { useTarget } from "@/components/TargetPicker";
 import { useClaudeStream } from "@/lib/useClaudeStream";
 
 export default function ResumePage() {
   const [jd, setJd] = useState("");
   const [out, setOut] = useState("");
+  const [target, setTarget] = useTarget();
   const { send, stop, running, tool } = useClaudeStream();
 
   const run = async () => {
     setOut("");
     await send(
-      { mode: "resume", jobDescription: jd },
+      { mode: "resume", jobDescription: jd, target },
       {
         onDelta: (d) => setOut((prev) => prev + d),
         onError: (m) => toast.error(m),
@@ -32,6 +34,8 @@ export default function ResumePage() {
           </h1>
           <p>Suggestions only — nothing in your resume file is touched.</p>
         </header>
+
+        <TargetPicker target={target} onChange={setTarget} />
 
         <label className="field">
           <span>Job description</span>

@@ -717,6 +717,46 @@
     line-height: 1.5;
   }
 
+  .target-picker {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .target-option {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    align-items: flex-start;
+    text-align: left;
+    padding: 0.5rem 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: 0.6rem;
+    background: var(--bg);
+    font-size: 0.85rem;
+    font-weight: 550;
+    cursor: pointer;
+    transition: 0.14s;
+  }
+  .target-option:hover {
+    border-color: var(--line-strong);
+    background: var(--surface-2);
+  }
+  .target-option[data-active] {
+    border-color: var(--color-primary-200);
+    background: rgba(202, 197, 254, 0.09);
+  }
+  .target-option em {
+    font-style: normal;
+    font-weight: 400;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .target-term {
+    flex: 1 1 8rem;
+    min-width: 8rem;
+  }
+
   .summary {
     display: flex;
     gap: 0.45rem;
