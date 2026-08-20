@@ -60,43 +60,33 @@ function jdBlock(jd: string): string {
 }
 
 /* ------------------------------------------------------------------ */
-/* What kind of application this is                                    */
+/* The internship this is being screened against                       */
 /* ------------------------------------------------------------------ */
 
-export const TARGETS = [
-  { id: "internship", label: "Internship", hint: "Summer 2027" },
-  { id: "fulltime", label: "Full-time", hint: "New grad or experienced" },
-] as const;
-
-export type TargetId = (typeof TARGETS)[number]["id"];
-
 export interface Target {
-  kind: TargetId;
-  /** Free text so it never goes stale, e.g. "Summer 2027". */
+  /** Internship term. Free text so it never goes stale, e.g. "Summer 2027". */
   term?: string;
 }
 
-export const DEFAULT_TARGET: Target = { kind: "internship", term: "Summer 2027" };
+export const DEFAULT_TARGET: Target = { term: "Summer 2027" };
 
 /**
- * Intern pipelines screen on completely different criteria from full-time reqs,
- * so every feature has to know which one it is looking at. Getting this wrong
- * is worse than useless: full-time framing tells a current student their degree
- * is an availability problem, when for an internship it is the qualification.
+ * Internship pipelines screen on completely different criteria from full-time
+ * reqs, and this app is only ever used for internships. Getting the framing
+ * wrong is worse than useless: full-time framing tells a current student their
+ * degree is an availability problem, when here it is the qualification.
  */
 function targetBlock(target?: Target): string {
-  const t = target ?? DEFAULT_TARGET;
-
-  if (t.kind === "internship") {
-    const term = t.term?.trim() || "an upcoming summer";
-    return `\n\n<application_target>
-This is an application for a ${term} INTERNSHIP, not a full-time role. Screen it the way an
-internship pipeline actually screens, which is not how a full-time req is screened:
+  const term = (target ?? DEFAULT_TARGET).term?.trim() || "an upcoming summer";
+  return `\n\n<application_target>
+This is an application for a ${term} INTERNSHIP. Screen it the way an internship pipeline actually
+screens, which is not how a full-time req is screened:
 
 - The candidate is a current graduate student. Being mid-degree is the qualification here, not a
   conflict. Never treat the graduation date as an availability problem, never suggest explaining it
   away, and never suggest they are applying to the wrong posting because they are still enrolled.
-- Availability is a single factual line (the internship window), not something to defend.
+- Availability is a single factual line (the internship window), not something to defend, and never
+  something to phrase as wanting or seeking a role.
 - Prior full-time industry experience is a major differentiator against an intern pool where most
   applicants have none. Foreground it. Do not evaluate it against a senior bar.
 - Education, coursework, and projects carry real weight on an intern resume. Do not tell the
@@ -107,13 +97,6 @@ internship pipeline actually screens, which is not how a full-time req is screen
 - Judge readiness for a scoped 12-week project with a mentor, not for owning a system alone.
 - Internship hiring runs on university recruiting timelines and return-offer conversion. Where it
   matters, say so.
-</application_target>`;
-  }
-
-  return `\n\n<application_target>
-This is an application for a FULL-TIME role. Screen it against the experienced-hire bar: prior
-production ownership, scope, and immediate availability all count, and gaps in required experience
-are real blockers rather than things a side project papers over.
 </application_target>`;
 }
 
@@ -130,16 +113,11 @@ export interface InterviewSetup {
   target?: Target;
 }
 
-function interviewBar(target?: Target): string {
-  return (target ?? DEFAULT_TARGET).kind === "internship"
-    ? `
+const INTERVIEW_BAR = `
 Calibrate to an INTERNSHIP loop, not a senior loop: fundamentals, clean thinking out loud, and depth
 on what the candidate has actually done. Coursework and projects are fair game. Do not expect
 production ownership at scale, and do not grade against a senior bar — grade on whether you would
-want to mentor this person for twelve weeks.`
-    : `
-Calibrate to a FULL-TIME loop: production ownership, scope, and tradeoffs under real constraints.`;
-}
+want to mentor this person for twelve weeks.`;
 
 export function interviewSystem(setup: InterviewSetup): string {
   if (setup.format === "assessment") {
@@ -149,7 +127,7 @@ Rules:
 - Calibrate difficulty to the job description, not to a generic template.
 - Never reveal answers until the candidate has submitted their attempt.
 - When you grade, be honest. A wrong answer is wrong. Give the score you would actually give.
-${interviewBar(setup.target)}`;
+${INTERVIEW_BAR}`;
   }
 
   return `You are conducting a live ${setup.round} interview for the role in the job description. You are an experienced ${setup.track} interviewer at the hiring company.${CANDIDATE_VOICE}
@@ -163,7 +141,7 @@ How to run this interview:
 - Keep your turns short — an interviewer talks far less than the candidate.
 - If the candidate stalls, offer the same small hint a real interviewer would, then continue.
 - Only produce a written evaluation when the candidate explicitly asks to end the interview.
-${interviewBar(setup.target)}`;
+${INTERVIEW_BAR}`;
 }
 
 export function interviewOpening(setup: InterviewSetup): string {

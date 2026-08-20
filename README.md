@@ -13,19 +13,19 @@ answer back into the browser.
 
 ---
 
-## Internship or full-time
+## Everything is an internship application
 
-Every page has an **Applying for** switch — *Internship* (with the term, e.g. `Summer 2027`) or
-*Full-time*. It is not cosmetic: intern pipelines screen on completely different criteria, and the
-choice is injected into every prompt.
+Every page has an **Internship term** field, prefilled `Summer 2027`. There is no full-time mode —
+intern pipelines screen on completely different criteria, and getting that wrong is worse than
+useless, so the internship framing is wired into every prompt:
 
-Set to **Internship**, being mid-degree is treated as the qualification rather than an availability
-problem, prior industry experience is judged against an intern pool instead of a senior bar,
-coursework and projects count, a missing production tool is a project to build rather than a
-blocker, and outreach puts university / early-career recruiters near the top. Set to **Full-time**,
-you get the experienced-hire bar back.
+Being mid-degree is treated as the qualification rather than an availability problem, availability is
+stated as a fact and never as wanting a role, prior industry experience is judged against an intern
+pool instead of a senior bar, coursework and projects count, a missing production tool is a project
+to build rather than a blocker, interviews are graded on twelve-weeks-with-a-mentor readiness, and
+outreach puts university / early-career recruiters near the top with the pipeline calendar.
 
-The choice is remembered in the browser, so you pick it once per hunt.
+The term is remembered in the browser, so you set it once.
 
 ## What it does
 

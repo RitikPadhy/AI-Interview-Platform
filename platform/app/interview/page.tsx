@@ -256,11 +256,7 @@ export default function InterviewPage() {
               <div className="summary">
                 <span>{trackLabel}</span>
                 <span>{roundLabel}</span>
-                <span>
-                  {target.kind === "internship"
-                    ? `${target.term?.trim() || "Summer"} internship`
-                    : "Full-time"}
-                </span>
+                <span>{`${target.term?.trim() || "Summer"} internship`}</span>
                 <span>{jd.trim().split(/\s+/).length} words of JD</span>
               </div>
               <div className="row end">
