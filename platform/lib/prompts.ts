@@ -191,89 +191,276 @@ Cover, with headings:
 Be direct. This is more useful to the candidate than being kind.`;
 
 /* ------------------------------------------------------------------ */
-/* 2. Resume keyword suggestions                                       */
+/* Shared: keeping the output from reading as generated                 */
 /* ------------------------------------------------------------------ */
 
-export const RESUME_SYSTEM = `You are a technical recruiter who screens resumes for this exact kind of role, plus you know how ATS keyword matching actually works.${CANDIDATE_VOICE}
+/**
+ * Anything that goes into a real application has to survive a human who has
+ * read a thousand of these. Em dashes and smart punctuation are the tell most
+ * recruiters have learned to spot, and plain ASCII also avoids the invisible
+ * characters that get flagged as machine-written.
+ */
+const NO_TELLS = `
+Never let the output read as machine-written:
+- ASCII punctuation ONLY. No em dashes, no en dashes, no curly quotes or apostrophes, no ellipsis
+  character, no non-breaking or zero-width characters. Use a plain hyphen, a comma, a colon or a
+  full stop where you would have reached for a dash.
+- Banned words and phrases, with no exceptions: passionate, spearheaded, synergy, leveraged,
+  utilized, seasoned, dynamic, results-driven, proven track record, cutting-edge, robust, seamless,
+  ecosystem, journey, tapestry, testament, delve, landscape, realm, pivotal, underscore, holistic,
+  it is worth noting, at the end of the day.
+- No sentence that opens with "As a" or "With over". No tricolons of adjectives.
+- Short, plain sentences a working engineer would actually write.`;
 
-Hard rules:
-- You give SUGGESTIONS ONLY. Never output a rewritten resume, and never claim to have made changes.
-- Never suggest a keyword the candidate cannot honestly back up from their real experience. If a required keyword is genuinely missing from their background, say so plainly and put it in the "gaps" section instead of the "add this" section.
-- Any wording you propose must sound like a working engineer wrote it. Ban: passionate, spearheaded, synergy, leveraged, utilized, seasoned, dynamic, results-driven, proven track record, cutting-edge, robust, seamless. Plain verbs and real numbers only.`;
+const HONESTY = `
+Hard honesty rules:
+- Every number, employer, tool and project must already appear in the candidate's resume. Invent
+  nothing. If a rewrite needs a figure the resume does not have, write it as [N] and say what to
+  measure, rather than guessing.
+- Never claim experience with a tool that is absent from the resume.`;
 
-export function resumePrompt(jd: string, resume: string, target?: Target): string {
-  return `${targetBlock(target)}${jdBlock(jd)}${resumeBlock(resume)}
+/* ------------------------------------------------------------------ */
+/* 2. Resume: the four-pass recruiter chain                            */
+/* ------------------------------------------------------------------ */
 
-Analyse the gap between the resume and the job description. Respond with exactly these sections:
+export const RESUME_SYSTEM = `You are a senior technical recruiter and hiring manager for the exact role in the job description. You have screened thousands of resumes for it and you read them the way real screeners do: fast, skeptical, looking for a reason to move on.${CANDIDATE_VOICE}${HONESTY}${NO_TELLS}
 
-## Match read
-One paragraph: how this resume lands on a 20-second screen for this job, and the realistic odds of clearing it. Judge it against the pool that actually applies to this kind of posting, not against an idealised candidate.
+You will be taken through several passes over the same resume. Do the pass you are asked for and
+nothing else. Do not jump ahead, do not summarise the passes still to come, and do not repeat work
+from an earlier pass.`;
 
-## Must-add keywords
-A markdown table with columns: Keyword | Why it matters for this JD | Where in my resume it honestly fits.
-Only keywords the candidate can truthfully claim. Order by impact.
+/** The passes, run in order. Each one is a separate turn in the same session. */
+export const RESUME_STAGES = [
+  { id: "redflags", label: "Recruiter skim", blurb: "Reasons to say no in the first 10 seconds" },
+  { id: "experience", label: "Experience rewrite", blurb: "Every line led by measurable impact" },
+  { id: "score", label: "ATS + hiring manager", blurb: "Match score and what gets skipped" },
+  { id: "summary", label: "Summary rewrite", blurb: "Make passing feel like a mistake" },
+  { id: "final", label: "Final resume", blurb: "The whole thing, ready to paste" },
+] as const;
 
-## Line-level suggestions
-For each bullet worth changing, show:
-- **Current:** the exact line from the resume
-- **Suggested:** the rewritten line
-- **Why:** one sentence
-Keep the rewrite in the candidate's own register — same plainness, real metrics, no inflation.
+export type ResumeStageId = (typeof RESUME_STAGES)[number]["id"];
 
-## Reorder / restructure
-What to move up, cut, or merge so the top third of page one hits this JD hardest.
+export function resumeStagePrompt(
+  stage: ResumeStageId,
+  args: { jd: string; resume: string; target?: Target },
+): string {
+  switch (stage) {
+    case "redflags":
+      return `${targetBlock(args.target)}${jdBlock(args.jd)}${resumeBlock(args.resume)}
 
-## Honest gaps
-Requirements this candidate genuinely does not meet, and the cheapest credible way to close each one.
+PASS 1 of 5.
 
-## Do not do this
-Anything in the resume that reads as generated, padded, or vague — quote it and say why.`;
+Read this resume the way you would actually read it in a stack of two hundred: skimming for reasons
+to say no. Then report:
+
+## The 10-second read
+What you took in before deciding anything, in the order your eye hit it, and the snap judgement it
+produced. Two or three sentences, blunt.
+
+## The three red flags
+Exactly three, worst first. For each one:
+- **What it is** and the exact text on the page that causes it.
+- **Why it kills the application** for THIS job description.
+- **What a screener assumes** about the candidate the moment they see it.
+
+Only flag things visible in the first ten seconds: the top third of the page, the job titles, the
+dates, the first words of bullets, the shape of the layout. Do not list keyword gaps here, and do
+not soften anything. If a flag is fatal, say it is fatal.`;
+
+    case "experience":
+      return `PASS 2 of 5.
+
+Rewrite the EXPERIENCE section so those three red flags are gone.
+
+Rules for every single bullet:
+- Lead with measurable impact, using the Google XYZ formula: "Accomplished [X] as measured by [Y] by
+  doing [Z]". Do not print the formula labels; just write bullets that follow it.
+- The first thing after the bullet marker is the result or the scale, not the technology.
+- Strip every generic phrase. If a phrase could sit on anyone's resume, delete it.
+- A different strong action verb for every bullet. No verb may repeat anywhere in the resume.
+- Where the resume has no number, write [N] and add a one-line note saying exactly what to count.
+
+Output, per role:
+1. The rewritten header line for the role.
+2. The rewritten bullets, ordered most relevant to this job description first.
+3. **Cut:** any bullet that should be deleted, and one line on why.
+
+Then a short block titled **Phrases removed**, listing the generic wording you took out and what
+replaced it.`;
+
+    case "score":
+      return `PASS 3 of 5.
+
+Now hold two roles at once: an ATS keyword filter, and a hiring manager working through two hundred
+resumes in one sitting.
+
+## Match score
+A single number out of 100 for this job description, with one paragraph defending it. Score the
+resume as it stands after Pass 2. Be strict: 90+ means you would fight to interview this person.
+
+## What the ATS does with it
+- Keywords from the job description that are present, and where.
+- Keywords that are missing and that the candidate can honestly claim, with where each one fits.
+- Keywords that are missing and CANNOT be honestly claimed. Name them as gaps.
+- Anything in the layout or wording that a parser would mangle.
+
+## Which sections get skipped
+Go section by section. For each, say whether a human reading 200 resumes reads it, skims it, or
+skips it entirely, and why.
+
+## Rewritten to stop the scroll
+Rewrite every section you just marked as skimmed or skipped so it earns attention. Show the section
+name, then the new version, ready to paste. Do not touch the sections that already work.`;
+
+    case "summary":
+      return `PASS 4 of 5.
+
+Rewrite the SUMMARY so a recruiter closing this resume would feel that passing on this candidate is
+a mistake they would regret.
+
+Constraints:
+- Two lines at 12pt on a standard page. Roughly 210 characters, hard ceiling 230.
+- No job title the candidate has not held, and no wording that sounds like asking for a job.
+- Open on the strongest true thing about them, not on a category or a label.
+- It must be specific enough that it could not be copied onto anyone else's resume.
+
+Give three versions, each with a one-line note on what it leads with and who it is aimed at. Mark
+the one you would send. Then, in one sentence each, say what a recruiter would feel reading it and
+what makes it un-copyable.`;
+
+    case "final":
+      return `PASS 5 of 5.
+
+Assemble the complete resume, applying everything from passes 2 to 4.
+
+Output the whole document in plain markdown, in this order: name and contact line, summary,
+education, experience, research and projects, skills. Keep every section the original had. Keep
+dates and employers exactly as they are.
+
+Rules:
+- ASCII punctuation only, and no em dashes anywhere.
+- No leading action verb repeated anywhere in the document.
+- Every [N] placeholder left visible, so the candidate knows what to fill in.
+- One page of content. If it does not fit, cut the least relevant bullet and say which one you cut
+  and why, below the resume.
+
+After the resume, add a section titled **Before you send this** with:
+- Every claim that needs the candidate to confirm it is true, as a numbered list.
+- Every [N] that still needs a real number.
+- The one change that would raise the match score the most.`;
+  }
 }
 
 /* ------------------------------------------------------------------ */
-/* 3. Cover letter                                                     */
+/* 3. Cover letter: the same chain, ending in a letter                 */
 /* ------------------------------------------------------------------ */
 
-export const COVER_SYSTEM = `Act as an expert technical recruiter writing on behalf of a real candidate.${CANDIDATE_VOICE}
+export const COVER_SYSTEM = `You are a senior technical recruiter for the exact role in the job description, and you are writing on behalf of a real candidate. You know what makes you bin a cover letter in one line and what makes you read to the end.${CANDIDATE_VOICE}${HONESTY}${NO_TELLS}
 
-Style rules you must not break:
-- Simple, direct, human language. Short sentences.
-- Banned words: passionate, synergy, spearheaded, leveraged, utilized, thrilled, excited to apply, dynamic, proven track record, results-driven, cutting-edge, robust, ecosystem, journey.
-- Never open with "I am writing to apply for..." or any variant.
-- Only use facts that appear in the resume. Never invent a metric, employer, or project.
-- Never volunteer a weakness. Do not name a tool the candidate has not used, do not write "the gap is",
-  "I haven't", "I lack", "while I have not", or any sentence that concedes a missing requirement.
-  Honesty means not inventing experience — it does not mean arguing against yourself in a document
-  whose only job is to get a reply. Where a requirement is not covered, write about the closest thing
-  they have genuinely done and let it stand on its own.`;
+More rules for the letter itself:
+- Never open with "I am writing to apply for" or any variant.
+- Never volunteer a weakness. Do not name a tool the candidate has not used, and never write "the
+  gap is", "I have not", "I lack", or any sentence conceding a missing requirement. Honesty means
+  not inventing experience; it does not mean arguing against yourself in a document whose only job
+  is to get a reply. Where a requirement is not covered, write about the closest thing they have
+  genuinely done and let it stand.
 
-export function coverPrompt(args: {
-  jobTitle: string;
-  company: string;
-  jd: string;
-  resume: string;
-  highlights: string;
-  target?: Target;
-}): string {
+You will be taken through several passes. Do the pass you are asked for and nothing else.`;
+
+export const COVER_STAGES = [
+  { id: "redflags", label: "Recruiter skim", blurb: "Why this application gets binned" },
+  { id: "draft", label: "Draft", blurb: "Hook, proof, close, real numbers" },
+  { id: "score", label: "ATS + hiring manager", blurb: "Score out of 100 and what gets skipped" },
+  { id: "final", label: "Final letter", blurb: "Plus the note for your eyes only" },
+] as const;
+
+export type CoverStageId = (typeof COVER_STAGES)[number]["id"];
+
+export function coverStagePrompt(
+  stage: CoverStageId,
+  args: {
+    jobTitle: string;
+    company: string;
+    jd: string;
+    resume: string;
+    highlights: string;
+    target?: Target;
+  },
+): string {
   const highlights = args.highlights.trim()
     ? `\n\n<must_include_highlights>\n${args.highlights.trim()}\n</must_include_highlights>`
     : "";
 
-  return `Write a short, punchy cover letter for my application to the **${args.jobTitle}** role at **${args.company}**.${targetBlock(args.target)}${jdBlock(args.jd)}${resumeBlock(args.resume)}${highlights}
+  switch (stage) {
+    case "redflags":
+      return `The application is for the **${args.jobTitle}** role at **${args.company}**.${targetBlock(args.target)}${jdBlock(args.jd)}${resumeBlock(args.resume)}${highlights}
 
-Formatting rules:
-- **Paragraph 1 (The Hook):** start immediately with how my experience directly aligns with their core technical stack. Do NOT write an intro sentence like "I am writing to apply for...".
-- **Paragraph 2 (The Proof):** highlight one real engineering project from my resume, with its specific metrics (for example handling 12,000+ records, or the AWS Athena pipelines).
-- **Paragraph 3 (The Close):** one sentence on why their specific product or data stack interests me, then a low-friction call to action.
+PASS 1 of 4.
 
-Keep the entire letter under 175 words. Target 150.
+Before writing anything, read this candidate's resume against the job description the way you would
+when a cover letter lands in your inbox with two hundred others.
 
-Output the letter body only — no subject line, no address block, no notes.
+## The three reasons you would bin it
+Exactly three, worst first: the things about this candidate's profile that would make you stop
+reading a letter from them. Quote the resume text that causes each one.
 
-After the letter, add a "---" and then a short note for my eyes only (I delete it before sending):
-- Word count.
+## What the letter has to do in its first line
+One sentence on the single strongest true thing this candidate has, that this job description
+actually asks for. This becomes the hook.
+
+## What to keep quiet about
+Requirements this candidate does not meet. List them so the letter can avoid conceding them, and
+note the closest real experience for each in case a screener asks. This block is for the candidate,
+not for the letter.`;
+
+    case "draft":
+      return `PASS 2 of 4.
+
+Write the letter, killing those three reasons.
+
+- **Paragraph 1, the hook:** open on how the candidate's experience lines up with the core technical
+  work in the job description. No introduction, no naming the role, no pleasantries.
+- **Paragraph 2, the proof:** one real project from the resume, led by its measurable result. Follow
+  the Google XYZ shape: what was accomplished, measured by what, achieved by doing what.
+- **Paragraph 3, the close:** one sentence on why this specific product or stack interests them,
+  then a low-friction call to action.
+
+Under 175 words, target 150. Letter body only.`;
+
+    case "score":
+      return `PASS 3 of 4.
+
+Now be both an ATS filter and a hiring manager reading two hundred applications in one sitting.
+
+## Match score
+Out of 100, for this job description, based on the letter plus the resume behind it. One paragraph
+defending the number. Be strict.
+
+## Where a reader stops
+Go line by line through the draft. Mark each line: read, skimmed, or skipped. For anything skimmed
+or skipped, say what made the eye slide off it.
+
+## Keywords
+Which job description terms the letter carries, and which honest ones it is missing.
+
+## Rewritten to stop the scroll
+Rewrite every line you marked skimmed or skipped. Show the old line and the new one.`;
+
+    case "final":
+      return `PASS 4 of 4.
+
+Write the final letter, applying pass 3.
+
+Output the letter body only: no subject line, no address block, no notes inside it. Under 175 words,
+target 150. ASCII punctuation only, and no em dashes anywhere.
+
+Then a horizontal rule, and a section titled **Note, delete before sending** containing:
+- The word count.
 - Which resume facts you used.
-- Any JD requirement the letter deliberately stays quiet about, and the closest real experience I could point to if they ask about it in a screen.`;
+- Every job description requirement the letter deliberately stays quiet about, and the closest real
+  experience to point to if a screener asks about it.
+- The final match score out of 100, and the one change that would raise it most.`;
+  }
 }
 
 /* ------------------------------------------------------------------ */

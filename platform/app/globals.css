@@ -717,6 +717,110 @@
     line-height: 1.5;
   }
 
+  /* multi-pass output */
+  .stage {
+    border: 1px solid var(--line);
+    border-radius: 0.6rem;
+    margin-bottom: 0.5rem;
+    background: var(--bg);
+  }
+  .stage[data-state="todo"] {
+    opacity: 0.45;
+  }
+  .stage[data-open] {
+    border-color: var(--line-strong);
+  }
+  .stage-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    background: none;
+    border: 0;
+    text-align: left;
+    cursor: pointer;
+    color: var(--text);
+  }
+  .stage[data-state="todo"] .stage-head {
+    cursor: default;
+  }
+  .stage-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    flex: none;
+    border-radius: 99px;
+    border: 1px solid var(--line-strong);
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .stage[data-state="done"] .stage-num {
+    border-color: var(--color-primary-200);
+    color: var(--color-primary-100);
+  }
+  .stage-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    font-size: 0.85rem;
+    font-weight: 550;
+    flex: 1;
+  }
+  .stage-label em {
+    font-style: normal;
+    font-weight: 400;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .stage-chevron {
+    flex: none;
+    color: var(--muted);
+    transition: 0.15s;
+  }
+  .stage[data-open] .stage-chevron {
+    transform: rotate(180deg);
+  }
+  .stage-body {
+    padding: 0 0.85rem 0.85rem;
+    border-top: 1px solid var(--line);
+    margin-top: 0.1rem;
+  }
+  .stage-copy {
+    margin-top: 0.6rem;
+  }
+
+  .pass-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .pass-list li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.74rem;
+    color: var(--muted);
+    background: var(--surface-2);
+    border-radius: 99px;
+    padding: 0.24rem 0.6rem;
+  }
+  .pass-list li span {
+    opacity: 0.7;
+  }
+  .pass-list li[data-state="current"] {
+    color: var(--text);
+    background: rgba(202, 197, 254, 0.14);
+  }
+  .pass-list li[data-state="done"] {
+    color: var(--color-primary-100);
+  }
+
   .target-term {
     max-width: 12rem;
   }

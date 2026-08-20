@@ -3,16 +3,20 @@ import { runClaude, toSSE } from "@/lib/claude";
 import { getResume } from "@/lib/resume";
 import {
   COVER_SYSTEM,
+  COVER_STAGES,
   END_INTERVIEW,
   GRADE_ASSESSMENT,
   OUTREACH_SYSTEM,
   RESUME_SYSTEM,
-  coverPrompt,
+  RESUME_STAGES,
+  coverStagePrompt,
   interviewOpening,
   interviewSystem,
   outreachPrompt,
-  resumePrompt,
+  resumeStagePrompt,
+  type CoverStageId,
   type InterviewSetup,
+  type ResumeStageId,
   type Target,
 } from "@/lib/prompts";
 
@@ -25,6 +29,8 @@ type Body = {
   sessionId?: string;
   setup?: Omit<InterviewSetup, "resume">;
   target?: Target;
+  /** Index into RESUME_STAGES / COVER_STAGES for the multi-pass modes. */
+  stage?: number;
   message?: string;
   jobDescription?: string;
   jobTitle?: string;
@@ -71,23 +77,48 @@ export async function POST(req: NextRequest) {
     }
 
     case "resume": {
-      if (!body.jobDescription?.trim()) {
-        return Response.json({ error: "Paste a job description first." }, { status: 400 });
+      const stage = body.stage ?? 0;
+      const step = RESUME_STAGES[stage];
+      if (!step) return Response.json({ error: "Unknown resume pass." }, { status: 400 });
+
+      // The whole chain is one conversation, so every pass can see the last.
+      persist = true;
+      if (stage === 0) {
+        if (!body.jobDescription?.trim()) {
+          return Response.json({ error: "Paste a job description first." }, { status: 400 });
+        }
+        systemPrompt = RESUME_SYSTEM;
+        resumeSessionId = undefined;
+      } else if (!resumeSessionId) {
+        return Response.json({ error: "No run to continue." }, { status: 400 });
       }
-      systemPrompt = RESUME_SYSTEM;
-      prompt = resumePrompt(body.jobDescription, resume, body.target);
+      prompt = resumeStagePrompt(step.id as ResumeStageId, {
+        jd: body.jobDescription ?? "",
+        resume,
+        target: body.target,
+      });
       break;
     }
 
     case "cover": {
-      if (!body.jobDescription?.trim()) {
-        return Response.json({ error: "Paste a job description first." }, { status: 400 });
+      const stage = body.stage ?? 0;
+      const step = COVER_STAGES[stage];
+      if (!step) return Response.json({ error: "Unknown cover letter pass." }, { status: 400 });
+
+      persist = true;
+      if (stage === 0) {
+        if (!body.jobDescription?.trim()) {
+          return Response.json({ error: "Paste a job description first." }, { status: 400 });
+        }
+        systemPrompt = COVER_SYSTEM;
+        resumeSessionId = undefined;
+      } else if (!resumeSessionId) {
+        return Response.json({ error: "No run to continue." }, { status: 400 });
       }
-      systemPrompt = COVER_SYSTEM;
-      prompt = coverPrompt({
+      prompt = coverStagePrompt(step.id as CoverStageId, {
         jobTitle: body.jobTitle?.trim() || "this",
         company: body.company?.trim() || "the company",
-        jd: body.jobDescription,
+        jd: body.jobDescription ?? "",
         resume,
         highlights: body.highlights ?? "",
         target: body.target,

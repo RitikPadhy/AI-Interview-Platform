@@ -35,15 +35,20 @@ async function exists(file: string): Promise<boolean> {
 async function locate(): Promise<string | null> {
   if (await exists(OVERRIDE_TXT)) return OVERRIDE_TXT;
   if (await exists(OVERRIDE_PDF)) return OVERRIDE_PDF;
-  try {
-    const entries = await readdir(ROOT);
-    const match =
-      entries.find((f) => /resume/i.test(f) && f.toLowerCase().endsWith(".pdf")) ??
-      entries.find((f) => /cv/i.test(f) && f.toLowerCase().endsWith(".pdf"));
-    return match ? path.join(ROOT, match) : null;
-  } catch {
-    return null;
+  // data/ wins over the repo root, so a resume you dropped in there is the one
+  // every feature reads.
+  for (const dir of [DATA_DIR, ROOT]) {
+    try {
+      const entries = await readdir(dir);
+      const match =
+        entries.find((f) => /resume/i.test(f) && f.toLowerCase().endsWith(".pdf")) ??
+        entries.find((f) => /cv/i.test(f) && f.toLowerCase().endsWith(".pdf"));
+      if (match) return path.join(dir, match);
+    } catch {
+      /* directory may not exist */
+    }
   }
+  return null;
 }
 
 export async function getResume(): Promise<ResumeDoc | null> {

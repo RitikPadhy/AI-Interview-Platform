@@ -3,29 +3,26 @@
 import { useState } from "react";
 import { Loader2, Mail, Sparkles, Square } from "lucide-react";
 import { toast } from "sonner";
-import OutputPanel from "@/components/OutputPanel";
 import ResumeStatus from "@/components/ResumeStatus";
+import StageList from "@/components/StageList";
 import TargetPicker, { useTarget } from "@/components/TargetPicker";
-import { useClaudeStream } from "@/lib/useClaudeStream";
+import { COVER_STAGES } from "@/lib/prompts";
+import { useStagedRun } from "@/lib/useStagedRun";
 
 export default function CoverLetterPage() {
   const [jobTitle, setJobTitle] = useState("");
   const [company, setCompany] = useState("");
   const [highlights, setHighlights] = useState("");
   const [jd, setJd] = useState("");
-  const [out, setOut] = useState("");
   const [target, setTarget] = useTarget();
-  const { send, stop, running, tool } = useClaudeStream();
+  const { run, stop, running, outputs, active, finished } = useStagedRun(COVER_STAGES);
 
   const ready = jd.trim().length >= 40 && jobTitle.trim() && company.trim();
 
-  const run = async () => {
-    setOut("");
-    await send(
-      { mode: "cover", jobTitle, company, highlights, jobDescription: jd, target },
-      { onDelta: (d) => setOut((prev) => prev + d), onError: (m) => toast.error(m) },
+  const start = () =>
+    run({ mode: "cover", jobTitle, company, highlights, jobDescription: jd, target }).catch(
+      (e: Error) => toast.error(e.message),
     );
-  };
 
   return (
     <div className="split">
@@ -34,7 +31,7 @@ export default function CoverLetterPage() {
           <h1>
             <Mail size={20} /> Cover Letter
           </h1>
-          <p>Under 175 words. Hook, proof, close. No buzzwords.</p>
+          <p>Four passes, ending in 150 words plus the note for your eyes only.</p>
         </header>
 
         <TargetPicker target={target} onChange={setTarget} />
@@ -45,16 +42,12 @@ export default function CoverLetterPage() {
             <input
               value={jobTitle}
               onChange={(e) => setJobTitle(e.target.value)}
-              placeholder="Data Platform Engineer"
+              placeholder="Data Engineering Intern"
             />
           </label>
           <label className="field">
             <span>Company</span>
-            <input
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              placeholder="Databricks"
-            />
+            <input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Stripe" />
           </label>
         </div>
 
@@ -65,8 +58,8 @@ export default function CoverLetterPage() {
           <textarea
             value={highlights}
             onChange={(e) => setHighlights(e.target.value)}
-            rows={3}
-            placeholder="Leave blank and it picks the two strongest bullets for this JD itself."
+            rows={2}
+            placeholder="Leave blank and it picks the strongest ones for this JD itself."
           />
         </label>
 
@@ -86,22 +79,31 @@ export default function CoverLetterPage() {
               <Square size={13} /> Stop
             </button>
           ) : (
-            <button className="btn-primary lg" onClick={run} disabled={!ready}>
-              <Sparkles size={15} /> Write the letter
+            <button className="btn-primary lg" onClick={start} disabled={!ready}>
+              <Sparkles size={15} /> {finished ? "Run it again" : "Run all four passes"}
             </button>
           )}
           {running && <Loader2 size={16} className="spin" />}
         </div>
 
+        <ol className="pass-list">
+          {COVER_STAGES.map((s, i) => (
+            <li key={s.id} data-state={active === i ? "current" : outputs[i] ? "done" : "todo"}>
+              <span>{i + 1}</span>
+              {s.label}
+            </li>
+          ))}
+        </ol>
+
         <ResumeStatus />
       </section>
 
-      <OutputPanel
-        text={out}
-        running={running}
-        tool={tool}
-        waitingLabel="Drafting…"
-        placeholder="Fill in the role and paste the JD. The letter appears here, ready to copy."
+      <StageList
+        stages={COVER_STAGES}
+        outputs={outputs}
+        active={active}
+        finished={finished}
+        placeholder="Fill in the role and paste the JD. You get why a screener would bin you, a draft, a score out of 100, and the final letter with a private note on what it stayed quiet about."
       />
     </div>
   );

@@ -46,20 +46,34 @@ Pick a track → pick the round → paste the job description → choose the for
 The conversation is a real multi-turn Claude session (`--session-id` on the first turn, `--resume`
 after), so it remembers everything you said.
 
-### 2. Resume Suggestions
-Paste a JD. You get the 20-second-screen read, a keyword table with *where in your resume each one
-honestly fits*, line-level rewrites, restructuring advice, and the gaps you cannot keyword your way
-out of.
+### 2. Resume
+Paste a JD and it runs five passes over your resume as one conversation, so each pass sees the last:
 
-It never edits your resume file and never suggests a claim you cannot back up.
+1. **Recruiter skim** - read the way a screener actually reads, hunting for reasons to say no. Out
+   comes the 10-second read and the three red flags, with the exact text on the page that causes
+   each one.
+2. **Experience rewrite** - every bullet led by measurable impact on the Google XYZ shape
+   (accomplished X as measured by Y by doing Z), every generic phrase stripped, a different action
+   verb on every line, and `[N]` wherever you need to supply a real number.
+3. **ATS + hiring manager** - a match score out of 100, which keywords parse and which are missing,
+   then section by section whether a human reading 200 resumes reads, skims or skips it. Everything
+   skimmed or skipped gets rewritten.
+4. **Summary rewrite** - three versions built so that passing on you feels like a mistake, sized to
+   two lines on the page, with one marked as the one to send.
+5. **Final resume** - the whole document assembled, plus a **Before you send this** list of every
+   claim you need to confirm and every `[N]` still to fill.
+
+It never edits your resume file. The last pass hands you a document to paste.
 
 ### 3. Cover Letter
-150 words. Hook / proof / close. Real metrics pulled from your resume, plain language, and a hard
-ban on `passionate`, `synergy`, `spearheaded`, `leveraged`, and the rest of the tells.
+The same treatment in four passes: why a screener would bin your application, a draft built on
+hook / proof / close with real metrics, a score out of 100 with a line-by-line read/skim/skip pass,
+then the final letter under 175 words.
 
-It never invents experience, and it never argues against you either — no "I haven't used X yet".
-Below the letter is a note for your eyes only: word count, the resume facts used, and every JD
-requirement the letter stayed quiet about with the closest real thing to say if a screener asks.
+It never invents experience and it never argues against you - no "I haven't used X yet". Below the
+letter is a note for your eyes only: word count, the resume facts used, the requirements the letter
+deliberately stayed quiet about with the closest real thing to say if a screener asks, and the one
+change that would raise the score most.
 
 ### 4. Who to Message
 The only feature that touches the internet. It runs live `WebSearch` / `WebFetch` through the CLI to
@@ -75,7 +89,8 @@ The app looks for a resume in this order:
 
 1. `data/resume.txt` — text you pasted in the UI
 2. `data/resume.pdf` — a PDF you uploaded in the UI
-3. any `*resume*.pdf` at the repo root ← this is the default
+3. any `*resume*.pdf` in `data/` ← put your current resume here
+4. any `*resume*.pdf` at the repo root
 
 The PDF is parsed with `unpdf` and the extracted text is injected into every prompt. The **Resume
 loaded from…** bar at the bottom of each page shows what is in play and lets you fix bad extraction
@@ -117,7 +132,9 @@ browser ──POST /api/chat──▶ spawn `claude -p --output-format stream-js
 | Path | Role |
 | --- | --- |
 | `lib/claude.ts` | Spawns the CLI, parses `stream-json`, exposes an event generator + SSE wrapper |
-| `lib/prompts.ts` | Every system prompt and turn template, plus the track/round taxonomy |
+| `lib/prompts.ts` | Every system prompt and turn template, the track/round taxonomy, and the resume/cover pass chains |
+| `lib/useStagedRun.ts` | Client hook: runs a pass chain as one session, streaming each pass separately |
+| `components/StageList.tsx` | The collapsible per-pass output |
 | `lib/resume.ts` | Finds the resume, extracts PDF text, caches it, handles uploads |
 | `lib/useClaudeStream.ts` | Client hook: POSTs and consumes the SSE stream |
 | `app/api/chat/route.ts` | Routes each mode to its prompt, tools and session handling |
