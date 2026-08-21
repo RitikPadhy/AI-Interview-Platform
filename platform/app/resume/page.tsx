@@ -24,7 +24,10 @@ export default function ResumePage() {
           <h1>
             <FileText size={20} /> Resume
           </h1>
-          <p>Five passes: the recruiter skim, the rewrite, the score, the summary, the final resume.</p>
+          <p>
+            The job description taken apart, then the recruiter skim, the rewrite, the score, the
+            summary, a coverage audit, and the finished resume.
+          </p>
         </header>
 
         <TargetPicker target={target} onChange={setTarget} />
@@ -46,7 +49,7 @@ export default function ResumePage() {
             </button>
           ) : (
             <button className="btn-primary lg" onClick={start} disabled={jd.trim().length < 40}>
-              <Sparkles size={15} /> {finished ? "Run it again" : "Run all five passes"}
+              <Sparkles size={15} /> {finished ? "Run it again" : `Run all ${RESUME_STAGES.length} passes`}
             </button>
           )}
           {running && <Loader2 size={16} className="spin" />}
@@ -74,7 +77,7 @@ export default function ResumePage() {
         outputs={outputs}
         active={active}
         finished={finished}
-        placeholder="Paste a job description. You get the red flags a screener sees in ten seconds, an experience section rewritten around measurable impact, a match score out of 100, three summaries, and the finished resume."
+        placeholder="Paste a job description. You get its requirements ranked with a baseline score, the red flags a screener sees in ten seconds, an experience section rewritten around measurable impact and the keywords that are honestly yours, a match score out of 100, three summaries, an audit of what landed and what overclaims, and the finished resume."
       />
     </div>
   );

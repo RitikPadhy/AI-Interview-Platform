@@ -47,28 +47,37 @@ The conversation is a real multi-turn Claude session (`--session-id` on the firs
 after), so it remembers everything you said.
 
 ### 2. Resume
-Paste a JD and it runs five passes over your resume as one conversation, so each pass sees the last:
+Paste a JD and it runs seven passes over your resume as one conversation, so each pass sees the last:
 
-1. **Recruiter skim** - read the way a screener actually reads, hunting for reasons to say no. Out
-   comes the 10-second read and the three red flags, with the exact text on the page that causes
-   each one.
-2. **Experience rewrite** - every bullet led by measurable impact on the Google XYZ shape
-   (accomplished X as measured by Y by doing Z), every generic phrase stripped, a different action
-   verb on every line, and `[N]` wherever you need to supply a real number.
-3. **ATS + hiring manager** - a match score out of 100, which keywords parse and which are missing,
-   then section by section whether a human reading 200 resumes reads, skims or skips it. Everything
-   skimmed or skipped gets rewritten.
-4. **Summary rewrite** - three versions built so that passing on you feels like a mistake, sized to
-   two lines on the page, with one marked as the one to send.
-5. **Final resume** - the whole document assembled, plus a **Before you send this** list of every
-   claim you need to confirm and every `[N]` still to fill.
+1. **JD teardown** - the posting taken apart before anything is touched: hard filters that auto-reject
+   you (enrollment, grad date, availability, work authorisation), must-have keywords ranked and quoted
+   with whether your resume has them, requirements buried in the responsibilities prose rather than the
+   bulleted list, and a baseline ATS score with exactly what it takes to reach 90-95. Every later pass
+   writes against this list.
+2. **Recruiter skim** - read the way a screener actually reads, hunting for reasons to say no. The
+   10-second read and the three red flags, each quoting the text on the page that causes it.
+3. **Experience rewrite** - every bullet led by measurable impact on the Google XYZ shape, generic
+   phrasing stripped, no action verb repeated, `[N]` wherever a number is missing with a note on what
+   to count, and the pass 1 keywords placed in the bullets where they are actually true.
+4. **ATS + hiring manager** - match score out of 100 against the ranked list, how far it moved from the
+   baseline, which keywords parse, then section by section whether a human reading 200 resumes reads,
+   skims or skips it. Everything skimmed or skipped gets rewritten.
+5. **Summary rewrite** - three versions built so passing on you feels like a mistake, sized to two
+   lines, one marked as the one to send.
+6. **Coverage audit** - the adversarial pass. Keyword by keyword, what landed and where; what is still
+   missing and fixable; and every place five passes of rewriting has drifted into claiming more than
+   your original resume supports, quoted old against new.
+7. **Final resume** - the whole document assembled with every correction applied, plus **Before you
+   send this**: claims to confirm, a table of `[N]` values with what to count, the final score against
+   the baseline, and the one change that would raise it most.
 
 It never edits your resume file. The last pass hands you a document to paste.
 
 ### 3. Cover Letter
-The same treatment in four passes: why a screener would bin your application, a draft built on
-hook / proof / close with real metrics, a score out of 100 with a line-by-line read/skim/skip pass,
-then the final letter under 175 words.
+Five passes: the JD taken apart (what the team is really buying, hard filters, the keywords a letter
+can carry inside a real story, what to stay quiet about, your single strongest card), why a screener
+would bin your application, the hook / proof / close draft, a score out of 100 with a line-by-line
+read/skim/skip pass, then the final letter under 175 words.
 
 It never invents experience and it never argues against you - no "I haven't used X yet". Below the
 letter is a note for your eyes only: word count, the resume facts used, the requirements the letter

@@ -31,7 +31,7 @@ export default function CoverLetterPage() {
           <h1>
             <Mail size={20} /> Cover Letter
           </h1>
-          <p>Four passes, ending in 150 words plus the note for your eyes only.</p>
+          <p>Five passes, ending in 150 words plus the note for your eyes only.</p>
         </header>
 
         <TargetPicker target={target} onChange={setTarget} />
@@ -80,7 +80,7 @@ export default function CoverLetterPage() {
             </button>
           ) : (
             <button className="btn-primary lg" onClick={start} disabled={!ready}>
-              <Sparkles size={15} /> {finished ? "Run it again" : "Run all four passes"}
+              <Sparkles size={15} /> {finished ? "Run it again" : `Run all ${COVER_STAGES.length} passes`}
             </button>
           )}
           {running && <Loader2 size={16} className="spin" />}

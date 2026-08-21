@@ -231,10 +231,12 @@ from an earlier pass.`;
 
 /** The passes, run in order. Each one is a separate turn in the same session. */
 export const RESUME_STAGES = [
+  { id: "teardown", label: "JD teardown", blurb: "Ranked requirements and the baseline score" },
   { id: "redflags", label: "Recruiter skim", blurb: "Reasons to say no in the first 10 seconds" },
-  { id: "experience", label: "Experience rewrite", blurb: "Every line led by measurable impact" },
+  { id: "experience", label: "Experience rewrite", blurb: "Measurable impact, keywords where true" },
   { id: "score", label: "ATS + hiring manager", blurb: "Match score and what gets skipped" },
   { id: "summary", label: "Summary rewrite", blurb: "Make passing feel like a mistake" },
+  { id: "audit", label: "Coverage audit", blurb: "What landed, what overclaims" },
   { id: "final", label: "Final resume", blurb: "The whole thing, ready to paste" },
 ] as const;
 
@@ -245,10 +247,43 @@ export function resumeStagePrompt(
   args: { jd: string; resume: string; target?: Target },
 ): string {
   switch (stage) {
-    case "redflags":
+    case "teardown":
       return `${targetBlock(args.target)}${jdBlock(args.jd)}${resumeBlock(args.resume)}
 
-PASS 1 of 5.
+PASS 1 of 7.
+
+Do not fix anything yet. Take the job description apart first, because everything later is written
+against what you produce here.
+
+## Hard filters
+The requirements that get an application rejected before a human forms an opinion: enrollment,
+graduation date, availability window, work authorisation, degree level, location. Quote each one from
+the job description, then say whether this candidate passes, fails, or it cannot be told from the
+resume. Flag anything a coordinator would have to guess at.
+
+## Must-have keywords, ranked
+A table: Keyword or phrase | Quoted from the job description | Why it is load-bearing | In the resume now?
+Rank by how heavily a screener and a parser weight it, most important first. Use the exact surface
+form the posting uses, because that is the string being matched. Where the posting and the resume use
+different words for the same thing, note both.
+
+## Nice to have
+The same table, for the things that differentiate rather than qualify.
+
+## Buried requirements
+Anything asked for in the responsibilities prose rather than the requirements list. These are the ones
+candidates miss because they only read the bulleted list. Quote them.
+
+## Baseline ATS rating
+A score out of 100 for the resume exactly as it stands, before any changes, with one paragraph
+defending it. Then, as a short ordered list, precisely what it would take to reach 90 to 95. Concrete
+changes only, no advice.
+
+This ranked list is the target for every later pass. Later passes must refer to these keywords by
+name.`;
+
+    case "redflags":
+      return `PASS 2 of 7.
 
 Read this resume the way you would actually read it in a stack of two hundred: skimming for reasons
 to say no. Then report:
@@ -268,9 +303,10 @@ dates, the first words of bullets, the shape of the layout. Do not list keyword 
 not soften anything. If a flag is fatal, say it is fatal.`;
 
     case "experience":
-      return `PASS 2 of 5.
+      return `PASS 3 of 7.
 
-Rewrite the EXPERIENCE section so those three red flags are gone.
+Rewrite the EXPERIENCE section so those three red flags are gone, and so it carries the must-have
+keywords from Pass 1.
 
 Rules for every single bullet:
 - Lead with measurable impact, using the Google XYZ formula: "Accomplished [X] as measured by [Y] by
@@ -279,6 +315,9 @@ Rules for every single bullet:
 - Strip every generic phrase. If a phrase could sit on anyone's resume, delete it.
 - A different strong action verb for every bullet. No verb may repeat anywhere in the resume.
 - Where the resume has no number, write [N] and add a one-line note saying exactly what to count.
+- Every must-have keyword from Pass 1 that this candidate can honestly claim must appear in the
+  bullet where it is actually true, in the surface form the job description uses. Do not sprinkle
+  keywords into bullets they do not belong to, and do not claim one you marked as a gap.
 
 Output, per role:
 1. The rewritten header line for the role.
@@ -286,17 +325,19 @@ Output, per role:
 3. **Cut:** any bullet that should be deleted, and one line on why.
 
 Then a short block titled **Phrases removed**, listing the generic wording you took out and what
-replaced it.`;
+replaced it, and a one-line block titled **Keywords now carried** naming the Pass 1 keywords this
+section now contains.`;
 
     case "score":
-      return `PASS 3 of 5.
+      return `PASS 4 of 7.
 
 Now hold two roles at once: an ATS keyword filter, and a hiring manager working through two hundred
 resumes in one sitting.
 
 ## Match score
-A single number out of 100 for this job description, with one paragraph defending it. Score the
-resume as it stands after Pass 2. Be strict: 90+ means you would fight to interview this person.
+A single number out of 100, scored against the ranked list from Pass 1, with one paragraph defending
+it. Score the resume as it stands after Pass 3, and say how far it moved from the Pass 1 baseline and
+why. Be strict: 90+ means you would fight to interview this person.
 
 ## What the ATS does with it
 - Keywords from the job description that are present, and where.
@@ -313,7 +354,7 @@ Rewrite every section you just marked as skimmed or skipped so it earns attentio
 name, then the new version, ready to paste. Do not touch the sections that already work.`;
 
     case "summary":
-      return `PASS 4 of 5.
+      return `PASS 5 of 7.
 
 Rewrite the SUMMARY so a recruiter closing this resume would feel that passing on this candidate is
 a mistake they would regret.
@@ -328,10 +369,39 @@ Give three versions, each with a one-line note on what it leads with and who it 
 the one you would send. Then, in one sentence each, say what a recruiter would feel reading it and
 what makes it un-copyable.`;
 
-    case "final":
-      return `PASS 5 of 5.
+    case "audit":
+      return `PASS 6 of 7.
 
-Assemble the complete resume, applying everything from passes 2 to 4.
+Audit the work before anything gets assembled. Be harder on this than on any other pass, because five
+passes of rewriting is exactly where a resume drifts into claims the candidate cannot defend.
+
+## Coverage
+A table covering every must-have and nice-to-have keyword from Pass 1: Keyword | Landed, missing, or
+cannot claim | The exact line it now lives on.
+
+## Still missing and fixable
+Keywords that are honestly claimable but still absent, and the specific line each one should go on.
+
+## Overclaims to pull back
+Every place the rewrites now say more than the original resume supports: a verb that implies more
+ownership than the candidate had, a scale that is not evidenced, an implied tool. Quote the new line,
+quote the original, and give the wording to use instead. If there are none, say so plainly rather
+than inventing some.
+
+## Repetition and tells
+Any leading action verb used twice, any banned phrase that crept back, any em dash or smart quote.
+
+## Fix list
+A numbered list of every change the final document must apply.`;
+
+    case "final":
+      return `PASS 7 of 7.
+
+Assemble the complete resume, applying the fix list from Pass 6.
+
+This is the deliverable. It must be the strongest honest version of this resume for this posting:
+every red flag from Pass 2 gone, the experience section from Pass 3, the section rewrites from Pass
+4, the summary you marked as the one to send from Pass 5, and every correction from Pass 6 applied.
 
 Output the whole document in plain markdown, in this order: name and contact line, summary,
 education, experience, research and projects, skills. Keep every section the original had. Keep
@@ -346,8 +416,9 @@ Rules:
 
 After the resume, add a section titled **Before you send this** with:
 - Every claim that needs the candidate to confirm it is true, as a numbered list.
-- Every [N] that still needs a real number.
-- The one change that would raise the match score the most.`;
+- Every [N] that still needs a real number, as a table of where and what to count.
+- The final match score out of 100 for this document, next to the Pass 1 baseline.
+- The one change that would raise it most, and roughly what it would move the score to.`;
   }
 }
 
@@ -368,6 +439,7 @@ More rules for the letter itself:
 You will be taken through several passes. Do the pass you are asked for and nothing else.`;
 
 export const COVER_STAGES = [
+  { id: "teardown", label: "JD teardown", blurb: "What this posting actually wants" },
   { id: "redflags", label: "Recruiter skim", blurb: "Why this application gets binned" },
   { id: "draft", label: "Draft", blurb: "Hook, proof, close, real numbers" },
   { id: "score", label: "ATS + hiring manager", blurb: "Score out of 100 and what gets skipped" },
@@ -392,10 +464,36 @@ export function coverStagePrompt(
     : "";
 
   switch (stage) {
-    case "redflags":
+    case "teardown":
       return `The application is for the **${args.jobTitle}** role at **${args.company}**.${targetBlock(args.target)}${jdBlock(args.jd)}${resumeBlock(args.resume)}${highlights}
 
-PASS 1 of 4.
+PASS 1 of 5.
+
+Do not write anything yet. Take the posting apart first.
+
+## What this posting is really buying
+Two or three sentences: the problem this team needs an intern to take off their hands. Not a restatement
+of the bullets.
+
+## Hard filters
+Enrollment, graduation date, availability window, work authorisation, location. Quote each from the
+posting and say whether this candidate passes, fails, or it cannot be told.
+
+## The keywords a letter can carry naturally, ranked
+A table: Keyword | Quoted from the posting | The candidate's real experience it attaches to.
+Only keywords that can sit in a sentence about something this candidate genuinely did. A cover letter
+that lists keywords reads as generated, so exclude anything that cannot be carried by a real story.
+
+## What to stay quiet about
+Requirements this candidate does not meet, with the closest real experience for each. The letter will
+avoid conceding these. This block is for the candidate, not for the letter.
+
+## The single strongest card
+One sentence: the most compelling true thing this candidate has that this posting is asking for.
+This becomes the hook.`;
+
+    case "redflags":
+      return `PASS 2 of 5.
 
 Before writing anything, read this candidate's resume against the job description the way you would
 when a cover letter lands in your inbox with two hundred others.
@@ -404,19 +502,15 @@ when a cover letter lands in your inbox with two hundred others.
 Exactly three, worst first: the things about this candidate's profile that would make you stop
 reading a letter from them. Quote the resume text that causes each one.
 
-## What the letter has to do in its first line
-One sentence on the single strongest true thing this candidate has, that this job description
-actually asks for. This becomes the hook.
-
-## What to keep quiet about
-Requirements this candidate does not meet. List them so the letter can avoid conceding them, and
-note the closest real experience for each in case a screener asks. This block is for the candidate,
-not for the letter.`;
+## What the first line has to do
+Given the strongest card from Pass 1, the exact job the opening sentence has to do, and the two
+openings you would reject as too slow.`;
 
     case "draft":
-      return `PASS 2 of 4.
+      return `PASS 3 of 5.
 
-Write the letter, killing those three reasons.
+Write the letter, killing those three reasons and carrying the Pass 1 keywords inside real sentences
+about real work. No keyword may appear as a list or as a claim with no story attached.
 
 - **Paragraph 1, the hook:** open on how the candidate's experience lines up with the core technical
   work in the job description. No introduction, no naming the role, no pleasantries.
@@ -428,13 +522,13 @@ Write the letter, killing those three reasons.
 Under 175 words, target 150. Letter body only.`;
 
     case "score":
-      return `PASS 3 of 4.
+      return `PASS 4 of 5.
 
 Now be both an ATS filter and a hiring manager reading two hundred applications in one sitting.
 
 ## Match score
-Out of 100, for this job description, based on the letter plus the resume behind it. One paragraph
-defending the number. Be strict.
+Out of 100, scored against the ranked list from Pass 1, based on the letter plus the resume behind
+it. One paragraph defending the number. Be strict.
 
 ## Where a reader stops
 Go line by line through the draft. Mark each line: read, skimmed, or skipped. For anything skimmed
@@ -447,9 +541,10 @@ Which job description terms the letter carries, and which honest ones it is miss
 Rewrite every line you marked skimmed or skipped. Show the old line and the new one.`;
 
     case "final":
-      return `PASS 4 of 4.
+      return `PASS 5 of 5.
 
-Write the final letter, applying pass 3.
+Write the final letter, applying Pass 4. This is the deliverable, so it must be the strongest honest
+version of this letter for this posting.
 
 Output the letter body only: no subject line, no address block, no notes inside it. Under 175 words,
 target 150. ASCII punctuation only, and no em dashes anywhere.
